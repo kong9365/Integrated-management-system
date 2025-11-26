@@ -1,0 +1,35 @@
+[
+  {
+    "id": 2,
+    "content": "광동제약 방문을 환영합니다",
+    "createdAt": "2025-11-20T23:38:57.942Z",
+    "isImportant": false,
+    "isWelcome": true,
+    "startDate": null,
+    "endDate": null
+  },
+  {
+    "id": 3,
+    "content": "화이팅!",
+    "createdAt": "2025-11-20T23:41:14.562Z",
+    "isImportant": false,
+    "isWelcome": false,
+    "startDate": null,
+    "endDate": null
+  },
+  {
+    "id": 4,
+    "content": "자율점검 예정",
+    "createdAt": "2025-11-20T23:41:42.075Z",
+    "isImportant": true,
+    "isWelcome": false,
+    "startDate": null,
+    "endDate": null
+  },
+  {
+    "id": 5,
+    "content": "홍길동 (품질관리2팀)님의 생일을 축하합니다!",
+    "createdAt": "2025-11-25T00:14:28.622Z",
+    "isImportant": true
+  }
+]

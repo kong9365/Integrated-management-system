@@ -1,0 +1,1 @@
+{"id":"audit_1764026810256_3cn47tv4b","timestamp":"2025-11-24T23:26:50.256Z","action":"create","actor":"시스템","entityType":"visitor","entityId":"visitor_1764026810253_yce522pok","entityInfo":{"name":"홍길동","visitDate":"2025-11-25","company":"Agilent","status":"pending"},"result":"success","details":"방문자 등록","hash":"d6c97d83ca494988c70eb0a4bc0ca1dccfb2e7c733b18e8fe8af917290989c0a"}

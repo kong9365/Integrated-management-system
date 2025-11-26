@@ -1,0 +1,350 @@
+[
+  {
+    "id": "1101",
+    "code": "1101",
+    "name": "Water Bath",
+    "location": "일반기기실(306)"
+  },
+  {
+    "id": "1312",
+    "code": "1312",
+    "name": "HPLC Agilent-16",
+    "location": "LC1실(303)"
+  },
+  {
+    "id": "1313",
+    "code": "1313",
+    "name": "HPLC Agilent-17",
+    "location": "LC1실(303)"
+  },
+  {
+    "id": "1314",
+    "code": "1314",
+    "name": "HPLC Agilent-15",
+    "location": "LC1실(303)"
+  },
+  {
+    "id": "1315",
+    "code": "1315",
+    "name": "HPLC Agilent-14",
+    "location": "LC2실(304)"
+  },
+  {
+    "id": "1435",
+    "code": "1435",
+    "name": "AAS(원자흡광광도계)",
+    "location": "GC실(307)"
+  },
+  {
+    "id": "1486",
+    "code": "1486",
+    "name": "FT-IR",
+    "location": "LC1실(303)"
+  },
+  {
+    "id": "2045",
+    "code": "2045",
+    "name": "GC 5 (FID/FID)",
+    "location": "GC실(307)"
+  },
+  {
+    "id": "2049",
+    "code": "2049",
+    "name": "HPLC(Shimadzu-8)",
+    "location": "LC1실(303)"
+  },
+  {
+    "id": "2050",
+    "code": "2050",
+    "name": "HPLC(Shimadzu-9)",
+    "location": "LC1실(303)"
+  },
+  {
+    "id": "2051",
+    "code": "2051",
+    "name": "HPLC(Shimadzu-10)",
+    "location": "LC1실(303)"
+  },
+  {
+    "id": "2052",
+    "code": "2052",
+    "name": "HPLC(Shimadzu-11)",
+    "location": "LC1실(303)"
+  },
+  {
+    "id": "2053",
+    "code": "2053",
+    "name": "HPLC Agilent-18",
+    "location": "LC2실(304)"
+  },
+  {
+    "id": "2054",
+    "code": "2054",
+    "name": "HPLC Agilent-19",
+    "location": "LC2실(304)"
+  },
+  {
+    "id": "2055",
+    "code": "2055",
+    "name": "HPLC Agilent-20",
+    "location": "LC2실(304)"
+  },
+  {
+    "id": "2056",
+    "code": "2056",
+    "name": "HPLC Agilent-21",
+    "location": "LC2실(304)"
+  },
+  {
+    "id": "2086",
+    "code": "2086",
+    "name": "GC/MS (Triple quad)",
+    "location": "GC실(307)"
+  },
+  {
+    "id": "2087",
+    "code": "2087",
+    "name": "용출기 3 (LABINDIA)",
+    "location": "암실(315)"
+  },
+  {
+    "id": "2122",
+    "code": "2122",
+    "name": "킬달 질소 정량장치",
+    "location": "일반기기실(306)"
+  },
+  {
+    "id": "2124",
+    "code": "2124",
+    "name": "융점측정기",
+    "location": "일반기기실2(316)"
+  },
+  {
+    "id": "2138",
+    "code": "2138",
+    "name": "선광도계",
+    "location": "일반기기실2(316)"
+  },
+  {
+    "id": "2139",
+    "code": "2139",
+    "name": "용출기 4 (LABINDIA)",
+    "location": "암실(315)"
+  },
+  {
+    "id": "2143",
+    "code": "2143",
+    "name": "ICP-MS(유도 결합 플라즈마 질량 분석기)",
+    "location": "ICP실(371)"
+  },
+  {
+    "id": "2171",
+    "code": "2171",
+    "name": "용출기 5 (LABINDIA)",
+    "location": "일반기기실(306)"
+  },
+  {
+    "id": "2195",
+    "code": "2195",
+    "name": "HPLC-22(Agilent)",
+    "location": "LC1실(303)"
+  },
+  {
+    "id": "2372",
+    "code": "2372",
+    "name": "LC/MS Agilent-2",
+    "location": "MS실(370)"
+  },
+  {
+    "id": "2373",
+    "code": "2373",
+    "name": "HPLC Agilent-23",
+    "location": "LC2실(304)"
+  },
+  {
+    "id": "2374",
+    "code": "2374",
+    "name": "HPLC Agilent-24",
+    "location": "LC2실(304)"
+  },
+  {
+    "id": "2375",
+    "code": "2375",
+    "name": "HPLC Agilent-25",
+    "location": "LC2실(304)"
+  },
+  {
+    "id": "2422",
+    "code": "2422",
+    "name": "GC/MS Agilent",
+    "location": "GC실(307)"
+  },
+  {
+    "id": "2496",
+    "code": "2496",
+    "name": "Water Bath 4",
+    "location": "일반기기실(306)"
+  },
+  {
+    "id": "2571",
+    "code": "2571",
+    "name": "HPLC Agilent-26",
+    "location": "LC2실(304)"
+  },
+  {
+    "id": "2572",
+    "code": "2572",
+    "name": "HPLC Agilent-27",
+    "location": "LC2실(304)"
+  },
+  {
+    "id": "2573",
+    "code": "2573",
+    "name": "HPLC Agilent-28",
+    "location": "LC2실(304)"
+  },
+  {
+    "id": "2574",
+    "code": "2574",
+    "name": "HPLC Agilent-29",
+    "location": "LC2실(304)"
+  },
+  {
+    "id": "2616",
+    "code": "2616",
+    "name": "GC-Headspace(FID/ECD)",
+    "location": "GC실(307)"
+  },
+  {
+    "id": "2636",
+    "code": "2636",
+    "name": "감압농축기",
+    "location": "일반기기실(306)"
+  },
+  {
+    "id": "2690",
+    "code": "2690",
+    "name": "HPLC Agilent-30",
+    "location": "LC2실(304)"
+  },
+  {
+    "id": "2691",
+    "code": "2691",
+    "name": "HPLC Agilent-31",
+    "location": "LC2실(304)"
+  },
+  {
+    "id": "2694",
+    "code": "2694",
+    "name": "HPTLC 1 (CAMAG)",
+    "location": "일반기기실(306)"
+  },
+  {
+    "id": "2697",
+    "code": "2697",
+    "name": "LC/MS Agilent-4",
+    "location": "MS실(370)"
+  },
+  {
+    "id": "2723",
+    "code": "2723",
+    "name": "TOC Analyzer 2 (Sievers)",
+    "location": "일반기기실2(316)"
+  },
+  {
+    "id": "2728",
+    "code": "2728",
+    "name": "LC/MS Agilent-5",
+    "location": "MS실(370)"
+  },
+  {
+    "id": "2732",
+    "code": "2732",
+    "name": "안정성챔버 2 (CARON)",
+    "location": "일반기기실2(316)"
+  },
+  {
+    "id": "2855",
+    "code": "2855",
+    "name": "GC-Headspace(FID/FPD)",
+    "location": "GC실(307)"
+  },
+  {
+    "id": "2856",
+    "code": "2856",
+    "name": "GC/MS Agilent-3",
+    "location": "GC실(307)"
+  },
+  {
+    "id": "2857",
+    "code": "2857",
+    "name": "HPLC(Shimadzu-12)",
+    "location": "LC1실(303)"
+  },
+  {
+    "id": "2858",
+    "code": "2858",
+    "name": "HPLC(Shimadzu-13)",
+    "location": "LC1실(303)"
+  },
+  {
+    "id": "2888",
+    "code": "2888",
+    "name": "수은분석기 2 (Milestone)",
+    "location": "GC실(307)"
+  },
+  {
+    "id": "2901",
+    "code": "2901",
+    "name": "질소농축기 2 (EYELA)",
+    "location": "일반기기실(306)"
+  },
+  {
+    "id": "2905",
+    "code": "2905",
+    "name": "감압농축기 4 (EYELA)",
+    "location": "일반기기실(306)"
+  },
+  {
+    "id": "2906",
+    "code": "2906",
+    "name": "감압농축기 5 (EYELA)",
+    "location": "일반기기실(306)"
+  },
+  {
+    "id": "2941",
+    "code": "2941",
+    "name": "Water Bath 8 (Changshin)",
+    "location": "일반기기실(306)"
+  },
+  {
+    "id": "2989",
+    "code": "2989",
+    "name": "아미노산 분석기2(Sykam)",
+    "location": "LC1실(303)"
+  },
+  {
+    "id": "663",
+    "code": "663",
+    "name": "DRY OVEN",
+    "location": "일반기기실(306)"
+  },
+  {
+    "id": "773",
+    "code": "773",
+    "name": "GC(NPD,TCD,FID)",
+    "location": "GC실(307)"
+  },
+  {
+    "id": "802",
+    "code": "802",
+    "name": "UHPLC",
+    "location": "LC1실(303)"
+  },
+  {
+    "id": "904",
+    "code": "904",
+    "name": "감압건조기",
+    "location": "일반기기실(306)"
+  }
+]

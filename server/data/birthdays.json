@@ -1,0 +1,9 @@
+[
+  {
+    "id": 2,
+    "name": "홍길동",
+    "birthMonth": 11,
+    "birthDay": 25,
+    "department": "품질관리2팀"
+  }
+]

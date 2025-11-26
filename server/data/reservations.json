@@ -1,0 +1,13 @@
+[
+  {
+    "id": "res_1763625031126_svrugq7jq",
+    "equipmentId": "1435",
+    "equipmentName": "AAS(원자흡광광도계)",
+    "userName": "10077 - 박재홍",
+    "reservationDate": "2025-11-17",
+    "purpose": "stability",
+    "status": "pending",
+    "createdAt": "2025-11-20T07:50:31.126Z",
+    "endDate": "2025-11-20"
+  }
+]

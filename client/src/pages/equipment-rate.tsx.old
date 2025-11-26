@@ -1,0 +1,827 @@
+/**
+ * 시험장비 가동률 페이지
+ * Python integrated_dashboard.py와 동일한 디자인 및 기능 구현
+ */
+
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, RefreshCw } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import { subDays, format } from "date-fns";
+import { DatePickerWithRange } from "@/components/ui/date-picker-range";
+import { collectDataNow } from "@/lib/cds-api";
+
+interface SessionRecord {
+  집계일자: string;
+  장비: string;
+  시험자: string;
+  acquisitionMethod: string;
+  샘플명: string;
+  가동시간_h: number;
+  세션시작?: string;
+  세션종료?: string;
+}
+
+interface UtilizationResponse {
+  success: boolean;
+  data: SessionRecord[];
+  count: number;
+}
+
+interface StatsResponse {
+  success: boolean;
+  data: {
+    equipmentRanking: Array<{ 순위: number; 장비: string; 가동시간_h: number }>;
+    userRanking: Array<{ 순위: number; 시험자: string; 가동시간_h: number }>;
+  };
+}
+
+interface OptionsResponse {
+  success: boolean;
+  data: {
+    equipment: Array<{ label: string; value: string }>;
+    users: Array<{ label: string; value: string }>;
+    analysis: Array<{ label: string; value: string }>;
+    products?: Array<{ label: string; value: string }>;
+    timeperiods?: Array<{ label: string; value: string }>;
+  };
+}
+
+const COLORS = [
+  "#8884d8",
+  "#82ca9d",
+  "#ffc658",
+  "#ff7300",
+  "#00ff00",
+  "#0088fe",
+  "#ff00ff",
+  "#ff0000",
+];
+
+export default function EquipmentRate() {
+  const [, setLocation] = useLocation();
+  const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [selectedAnalysis, setSelectedAnalysis] = useState<string[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [selectedTimeperiods, setSelectedTimeperiods] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  });
+  const [activeTab, setActiveTab] = useState<"equipment" | "analysis" | "data">("equipment");
+
+  // 필터 옵션 조회
+  const { data: optionsData } = useQuery<OptionsResponse>({
+    queryKey: ["cds-utilization-options"],
+    queryFn: async () => {
+      const response = await fetch("/api/cds/utilization/options");
+      if (!response.ok) {
+        throw new Error("필터 옵션을 가져오는데 실패했습니다");
+      }
+      return response.json();
+    },
+    staleTime: 0, // 항상 최신 데이터 사용
+    refetchOnMount: true, // 컴포넌트 마운트 시 항상 재조회
+  });
+
+  // 수동 데이터 수집 함수 (공통 API 사용)
+  const handleManualCollect = async () => {
+    const success = await collectDataNow();
+    if (success) {
+      // 수집 성공 후 데이터 새로고침
+      setTimeout(() => {
+        refetch();
+        refetchStats();
+      }, 1000);
+    }
+  };
+
+  // 가동률 데이터 조회
+  const { data: utilizationData, isLoading, refetch } = useQuery<UtilizationResponse>({
+    queryKey: [
+      "cds-utilization",
+      dateRange.from,
+      dateRange.to,
+      selectedEquipment,
+      selectedUsers,
+      selectedAnalysis,
+      selectedProducts,
+      selectedTimeperiods,
+    ],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (dateRange.from) {
+        params.append("startDate", format(dateRange.from, "yyyy-MM-dd"));
+      }
+      if (dateRange.to) {
+        params.append("endDate", format(dateRange.to, "yyyy-MM-dd"));
+      }
+      if (selectedEquipment.length > 0) {
+        selectedEquipment.forEach((eq) => params.append("equipment", eq));
+      }
+      if (selectedUsers.length > 0) {
+        selectedUsers.forEach((user) => params.append("user", user));
+      }
+      if (selectedAnalysis.length > 0) {
+        selectedAnalysis.forEach((analysis) => params.append("analysis", analysis));
+      }
+      if (selectedProducts.length > 0) {
+        selectedProducts.forEach((product) => params.append("product", product));
+      }
+      if (selectedTimeperiods.length > 0) {
+        selectedTimeperiods.forEach((tp) => params.append("timeperiod", tp));
+      }
+
+      const response = await fetch(`/api/cds/utilization?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error("가동률 데이터를 가져오는데 실패했습니다");
+      }
+      return response.json();
+    },
+    staleTime: 0, // 항상 최신 데이터 사용
+    refetchOnMount: true, // 컴포넌트 마운트 시 항상 재조회
+    refetchInterval: 120000, // 2분마다 자동 갱신
+  });
+
+  // 통계 데이터 조회
+  const { data: statsData, refetch: refetchStats } = useQuery<StatsResponse>({
+    queryKey: [
+      "cds-utilization-stats",
+      dateRange.from,
+      dateRange.to,
+      selectedEquipment,
+      selectedUsers,
+      selectedAnalysis,
+      selectedProducts,
+      selectedTimeperiods,
+    ],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (dateRange.from) {
+        params.append("startDate", format(dateRange.from, "yyyy-MM-dd"));
+      }
+      if (dateRange.to) {
+        params.append("endDate", format(dateRange.to, "yyyy-MM-dd"));
+      }
+      if (selectedEquipment.length > 0) {
+        selectedEquipment.forEach((eq) => params.append("equipment", eq));
+      }
+      if (selectedUsers.length > 0) {
+        selectedUsers.forEach((user) => params.append("user", user));
+      }
+      if (selectedAnalysis.length > 0) {
+        selectedAnalysis.forEach((analysis) => params.append("analysis", analysis));
+      }
+      if (selectedProducts.length > 0) {
+        selectedProducts.forEach((product) => params.append("product", product));
+      }
+      if (selectedTimeperiods.length > 0) {
+        selectedTimeperiods.forEach((tp) => params.append("timeperiod", tp));
+      }
+
+      const response = await fetch(`/api/cds/utilization/stats?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error("통계 데이터를 가져오는데 실패했습니다");
+      }
+      return response.json();
+    },
+    staleTime: 0, // 항상 최신 데이터 사용
+    refetchOnMount: true, // 컴포넌트 마운트 시 항상 재조회
+  });
+
+  const sessions = utilizationData?.data || [];
+  const equipmentRanking = statsData?.data?.equipmentRanking || [];
+  const userRanking = statsData?.data?.userRanking || [];
+
+  // 차트 데이터 준비
+  const equipmentUsageData = sessions.reduce((acc, session) => {
+    const existing = acc.find((item) => item.장비 === session.장비);
+    if (existing) {
+      existing.가동시간_h += session.가동시간_h;
+    } else {
+      acc.push({ 장비: session.장비, 가동시간_h: session.가동시간_h });
+    }
+    return acc;
+  }, [] as Array<{ 장비: string; 가동시간_h: number }>)
+    .sort((a, b) => a.가동시간_h - b.가동시간_h);
+
+  const analysisUsageData = sessions.reduce((acc, session) => {
+    if (!session.acquisitionMethod) return acc;
+    const existing = acc.find((item) => item.acquisitionMethod === session.acquisitionMethod);
+    if (existing) {
+      existing.가동시간_h += session.가동시간_h;
+    } else {
+      acc.push({
+        acquisitionMethod: session.acquisitionMethod,
+        가동시간_h: session.가동시간_h,
+      });
+    }
+    return acc;
+  }, [] as Array<{ acquisitionMethod: string; 가동시간_h: number }>)
+    .sort((a, b) => b.가동시간_h - a.가동시간_h)
+    .slice(0, 10);
+
+  const trendData = sessions.reduce((acc, session) => {
+    const date = session.집계일자;
+    const existing = acc.find((item) => item.집계일자 === date);
+    if (existing) {
+      existing.가동시간_h += session.가동시간_h;
+    } else {
+      acc.push({ 집계일자: date, 가동시간_h: session.가동시간_h });
+    }
+    return acc;
+  }, [] as Array<{ 집계일자: string; 가동시간_h: number }>)
+    .sort((a, b) => a.집계일자.localeCompare(b.집계일자));
+
+  const handleSelectAll = (type: "equipment" | "user" | "analysis" | "product" | "timeperiod") => {
+    if (!optionsData?.data) return;
+    if (type === "equipment") {
+      setSelectedEquipment(optionsData.data.equipment.map((eq) => eq.value));
+    } else if (type === "user") {
+      setSelectedUsers(optionsData.data.users.map((user) => user.value));
+    } else if (type === "analysis") {
+      setSelectedAnalysis(optionsData.data.analysis.map((analysis) => analysis.value));
+    } else if (type === "product" && optionsData.data.products) {
+      setSelectedProducts(optionsData.data.products.map((product) => product.value));
+    } else if (type === "timeperiod" && optionsData.data.timeperiods) {
+      setSelectedTimeperiods(optionsData.data.timeperiods.map((tp) => tp.value));
+    }
+  };
+
+  const handleDeselectAll = (type: "equipment" | "user" | "analysis" | "product" | "timeperiod") => {
+    if (type === "equipment") {
+      setSelectedEquipment([]);
+    } else if (type === "user") {
+      setSelectedUsers([]);
+    } else if (type === "analysis") {
+      setSelectedAnalysis([]);
+    } else if (type === "product") {
+      setSelectedProducts([]);
+    } else if (type === "timeperiod") {
+      setSelectedTimeperiods([]);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* 메뉴로 돌아가기 버튼 */}
+      <div className="bg-white border-b border-gray-200 px-5 py-3 shadow-sm">
+        <Button
+          variant="ghost"
+          className="mb-2"
+          onClick={() => setLocation("/menu")}
+          data-testid="button-back"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          메뉴로 돌아가기
+        </Button>
+      </div>
+
+      {/* 네비게이션 바 */}
+      <div className="bg-white border-b border-gray-200 px-5 py-3 shadow-sm">
+        <div className="flex items-center gap-2">
+          <span className="text-xl font-bold text-red-600">KWANG DONG</span>
+          <span className="text-xl font-bold text-gray-700">PHARMACEUTICAL CO., LTD.</span>
+          <span className="text-sm text-blue-600 ml-10">OpenLab CDS Instrument Dashboard (실시간)</span>
+        </div>
+      </div>
+
+      <div className="flex min-h-[calc(100vh-80px)]">
+        {/* 사이드바 */}
+        <div className="w-64 min-w-[250px] bg-white border-r border-gray-200 p-5 shadow-sm">
+          {/* 실시간 상태 */}
+          <div className="mb-5">
+            <label className="block font-bold mb-2 text-sm text-gray-700">🔴 실시간 상태:</label>
+            <div className="text-sm text-gray-600">
+              {isLoading ? "로딩 중..." : `활성 - ${sessions.length}건 세션`}
+            </div>
+          </div>
+
+          {/* 장비 선택 */}
+          <div className="mb-5">
+            <label className="block font-bold mb-2 text-sm text-gray-700">장비 선택:</label>
+            <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2 mb-2">
+              {optionsData?.data.equipment.map((eq) => (
+                <div key={eq.value} className="flex items-center space-x-2 py-1">
+                  <Checkbox
+                    id={`eq-${eq.value}`}
+                    checked={selectedEquipment.includes(eq.value)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedEquipment([...selectedEquipment, eq.value]);
+                      } else {
+                        setSelectedEquipment(selectedEquipment.filter((v) => v !== eq.value));
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor={`eq-${eq.value}`}
+                    className="text-sm cursor-pointer flex-1"
+                  >
+                    {eq.label}
+                  </label>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs px-2 py-1 h-6"
+                onClick={() => handleSelectAll("equipment")}
+              >
+                Select All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs px-2 py-1 h-6"
+                onClick={() => handleDeselectAll("equipment")}
+              >
+                Deselect All
+              </Button>
+            </div>
+          </div>
+
+          {/* 날짜 선택 */}
+          <div className="mb-5">
+            <label className="block font-bold mb-2 text-sm text-gray-700">날짜 선택:</label>
+            <DatePickerWithRange
+              date={dateRange}
+              onDateChange={setDateRange}
+            />
+          </div>
+
+          {/* 사용자 선택 */}
+          <div className="mb-5">
+            <label className="block font-bold mb-2 text-sm text-gray-700">사용자 선택:</label>
+            <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2 mb-2">
+              {optionsData?.data.users.map((user) => (
+                <div key={user.value} className="flex items-center space-x-2 py-1">
+                  <Checkbox
+                    id={`user-${user.value}`}
+                    checked={selectedUsers.includes(user.value)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedUsers([...selectedUsers, user.value]);
+                      } else {
+                        setSelectedUsers(selectedUsers.filter((v) => v !== user.value));
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor={`user-${user.value}`}
+                    className="text-sm cursor-pointer flex-1"
+                  >
+                    {user.label}
+                  </label>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs px-2 py-1 h-6"
+                onClick={() => handleSelectAll("user")}
+              >
+                Select All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs px-2 py-1 h-6"
+                onClick={() => handleDeselectAll("user")}
+              >
+                Deselect All
+              </Button>
+            </div>
+          </div>
+
+          {/* 제품 선택 */}
+          <div className="mb-5">
+            <label className="block font-bold mb-2 text-sm text-gray-700">제품 선택:</label>
+            <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2 mb-2">
+              {optionsData?.data.products?.map((product) => (
+                <div key={product.value} className="flex items-center space-x-2 py-1">
+                  <Checkbox
+                    id={`product-${product.value}`}
+                    checked={selectedProducts.includes(product.value)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedProducts([...selectedProducts, product.value]);
+                      } else {
+                        setSelectedProducts(selectedProducts.filter((v) => v !== product.value));
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor={`product-${product.value}`}
+                    className="text-sm cursor-pointer flex-1"
+                  >
+                    {product.label}
+                  </label>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs px-2 py-1 h-6"
+                onClick={() => handleSelectAll("product")}
+              >
+                Select All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs px-2 py-1 h-6"
+                onClick={() => handleDeselectAll("product")}
+              >
+                Deselect All
+              </Button>
+            </div>
+          </div>
+
+          {/* 분석 선택 */}
+          <div className="mb-5">
+            <label className="block font-bold mb-2 text-sm text-gray-700">분석 선택:</label>
+            <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2 mb-2">
+              {optionsData?.data.analysis.map((analysis) => (
+                <div key={analysis.value} className="flex items-center space-x-2 py-1">
+                  <Checkbox
+                    id={`analysis-${analysis.value}`}
+                    checked={selectedAnalysis.includes(analysis.value)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedAnalysis([...selectedAnalysis, analysis.value]);
+                      } else {
+                        setSelectedAnalysis(selectedAnalysis.filter((v) => v !== analysis.value));
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor={`analysis-${analysis.value}`}
+                    className="text-sm cursor-pointer flex-1"
+                  >
+                    {analysis.label}
+                  </label>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs px-2 py-1 h-6"
+                onClick={() => handleSelectAll("analysis")}
+              >
+                Select All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs px-2 py-1 h-6"
+                onClick={() => handleDeselectAll("analysis")}
+              >
+                Deselect All
+              </Button>
+            </div>
+          </div>
+
+          {/* 오전/오후 선택 */}
+          <div className="mb-5">
+            <label className="block font-bold mb-2 text-sm text-gray-700">오전/오후 선택:</label>
+            <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2 mb-2">
+              {optionsData?.data.timeperiods?.map((tp) => (
+                <div key={tp.value} className="flex items-center space-x-2 py-1">
+                  <Checkbox
+                    id={`timeperiod-${tp.value}`}
+                    checked={selectedTimeperiods.includes(tp.value)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedTimeperiods([...selectedTimeperiods, tp.value]);
+                      } else {
+                        setSelectedTimeperiods(selectedTimeperiods.filter((v) => v !== tp.value));
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor={`timeperiod-${tp.value}`}
+                    className="text-sm cursor-pointer flex-1"
+                  >
+                    {tp.label}
+                  </label>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs px-2 py-1 h-6"
+                onClick={() => handleSelectAll("timeperiod")}
+              >
+                Select All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs px-2 py-1 h-6"
+                onClick={() => handleDeselectAll("timeperiod")}
+              >
+                Deselect All
+              </Button>
+            </div>
+          </div>
+
+          {/* 다시불러오기 버튼 */}
+          <Button
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold mt-5"
+            onClick={() => {
+              refetch();
+              refetchStats();
+            }}
+            disabled={isLoading}
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            다시불러오기
+          </Button>
+        </div>
+
+        {/* 메인 콘텐츠 영역 */}
+        <div className="flex-1 p-5">
+          {/* 탭 네비게이션 */}
+          <div className="bg-white border-b border-gray-200 mb-0">
+            <div className="flex">
+              <button
+                className={`px-5 py-3 font-medium text-sm border-b-2 transition-colors ${
+                  activeTab === "equipment"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-gray-600 hover:text-blue-600"
+                }`}
+                onClick={() => setActiveTab("equipment")}
+              >
+                📈 장비 그래프
+              </button>
+              <button
+                className={`px-5 py-3 font-medium text-sm border-b-2 transition-colors ${
+                  activeTab === "analysis"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-gray-600 hover:text-blue-600"
+                }`}
+                onClick={() => setActiveTab("analysis")}
+              >
+                📈 분석 그래프
+              </button>
+              <button
+                className={`px-5 py-3 font-medium text-sm border-b-2 transition-colors ${
+                  activeTab === "data"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-gray-600 hover:text-blue-600"
+                }`}
+                onClick={() => setActiveTab("data")}
+              >
+                📋 데이터
+              </button>
+            </div>
+          </div>
+
+          {/* 탭 콘텐츠 */}
+          <div className="bg-white p-5 rounded-b-lg">
+            {activeTab === "equipment" ? (
+              <div className="space-y-5">
+                {/* 장비별 운용 비율 그래프 */}
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+                  <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex justify-between items-center rounded-t-lg">
+                    <span className="font-bold text-sm">😄 장비별 운용 비율 - FILTER : 장비 + 기간</span>
+                    <button className="text-gray-500 hover:text-gray-700">⛶</button>
+                  </div>
+                  <div className="p-4" style={{ height: "60vh" }}>
+                    {equipmentUsageData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={equipmentUsageData} layout="vertical">
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis type="number" />
+                          <YAxis dataKey="장비" type="category" width={150} />
+                          <Tooltip />
+                          <Bar dataKey="가동시간_h" fill="#8884d8" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-gray-500">
+                        데이터가 없습니다
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 분석용 그래프 */}
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+                  <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex justify-between items-center rounded-t-lg">
+                    <span className="font-bold text-sm">분석용 그래프</span>
+                    <button className="text-gray-500 hover:text-gray-700">⛶</button>
+                  </div>
+                  <div className="p-4" style={{ height: "60vh" }}>
+                    {trendData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={trendData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="집계일자" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Line
+                            type="monotone"
+                            dataKey="가동시간_h"
+                            stroke="#8884d8"
+                            strokeWidth={2}
+                            dot={{ r: 4 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-gray-500">
+                        데이터가 없습니다
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : activeTab === "analysis" ? (
+              <div className="space-y-5">
+                {/* 분석별 운용 비율 파이차트 */}
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+                  <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex justify-between items-center rounded-t-lg">
+                    <span className="font-bold text-sm">📊 분석별 운용 비율</span>
+                    <button className="text-gray-500 hover:text-gray-700">⛶</button>
+                  </div>
+                  <div className="p-4" style={{ height: "60vh" }}>
+                    {analysisUsageData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={analysisUsageData}
+                            dataKey="가동시간_h"
+                            nameKey="acquisitionMethod"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={150}
+                            label
+                          >
+                            {analysisUsageData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-gray-500">
+                        데이터가 없습니다
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-5" style={{ height: "85vh" }}>
+                {/* 왼쪽: 장비 운용시간 테이블 */}
+                <div className="flex-1 bg-white border border-gray-200 rounded-lg shadow-sm">
+                  <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 rounded-t-lg">
+                    <span className="font-bold text-sm">🕜 장비 운용시간</span>
+                  </div>
+                  <div className="p-4 overflow-auto" style={{ height: "calc(85vh - 60px)" }}>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>장비</TableHead>
+                          <TableHead>날짜</TableHead>
+                          <TableHead>사용시간(h)</TableHead>
+                          <TableHead>사용자</TableHead>
+                          <TableHead>분석법</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sessions.map((session, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">{session.장비}</TableCell>
+                            <TableCell>{session.집계일자}</TableCell>
+                            <TableCell>{session.가동시간_h.toFixed(2)}</TableCell>
+                            <TableCell>{session.시험자 || "-"}</TableCell>
+                            <TableCell>{session.acquisitionMethod || "-"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+
+                {/* 오른쪽: 랭킹 테이블들 */}
+                <div className="flex-1 space-y-5">
+                  {/* 장비 랭킹 */}
+                  <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 rounded-t-lg">
+                      <span className="font-bold text-sm">🏆 장비 Ranking</span>
+                    </div>
+                    <div className="p-4 overflow-auto" style={{ height: "35vh" }}>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>순위</TableHead>
+                            <TableHead>장비</TableHead>
+                            <TableHead>사용시간(h)</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {equipmentRanking.map((item) => (
+                            <TableRow
+                              key={item.장비}
+                              className={
+                                item.순위 === 1
+                                  ? "bg-yellow-50"
+                                  : item.순위 === 2
+                                  ? "bg-gray-50"
+                                  : item.순위 === 3
+                                  ? "bg-gray-100"
+                                  : ""
+                              }
+                            >
+                              <TableCell>{item.순위}</TableCell>
+                              <TableCell className="font-medium">{item.장비}</TableCell>
+                              <TableCell>{item.가동시간_h.toFixed(2)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+
+                  {/* 사용자 랭킹 */}
+                  <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 rounded-t-lg">
+                      <span className="font-bold text-sm">🏆 사용자 Ranking</span>
+                    </div>
+                    <div className="p-4 overflow-auto" style={{ height: "35vh" }}>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>순위</TableHead>
+                            <TableHead>사용자</TableHead>
+                            <TableHead>사용시간(h)</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {userRanking.map((item) => (
+                            <TableRow
+                              key={item.시험자}
+                              className={
+                                item.순위 === 1
+                                  ? "bg-blue-50"
+                                  : item.순위 === 2
+                                  ? "bg-gray-50"
+                                  : item.순위 === 3
+                                  ? "bg-gray-100"
+                                  : ""
+                              }
+                            >
+                              <TableCell>{item.순위}</TableCell>
+                              <TableCell className="font-medium">{item.시험자}</TableCell>
+                              <TableCell>{item.가동시간_h.toFixed(2)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

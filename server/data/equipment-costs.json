@@ -1,0 +1,11 @@
+{
+  "GC-Headspace (FID/ECD)": 8000000,
+  "HPLC Agilent-14": 12000000,
+  "HPLC Agilent-28": 10000000,
+  "HPLC Agilent-29": 11000000,
+  "HPLC Agilent-27": 9000000,
+  "HPLC Agilent-30": 9500000,
+  "GC-MS Agilent": 15000000,
+  "HPLC Waters-01": 13000000
+}
+

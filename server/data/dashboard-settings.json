@@ -1,0 +1,19 @@
+{
+  "ad": {
+    "youtubeUrl": "https://www.youtube.com/embed?listType=user_uploads&list=Kwangdong&autoplay=0",
+    "channelName": "Kwangdong",
+    "autoplay": true
+  },
+  "promo": {
+    "images": [
+      "홍보페이지-1.png",
+      "홍보페이지-2.png"
+    ]
+  },
+  "lab": {
+    "fileType": "image",
+    "files": [
+      "시험실도면.png"
+    ]
+  }
+}
