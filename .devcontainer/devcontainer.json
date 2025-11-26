@@ -26,16 +26,20 @@
   "portsAttributes": {
     "5000": {
       "label": "Express Server",
-      "onAutoForward": "notify"
+      "onAutoForward": "notify",
+      "protocol": "http",
+      "visibility": "public"
     },
     "5173": {
       "label": "Vite Dev Server",
-      "onAutoForward": "notify"
+      "onAutoForward": "notify",
+      "protocol": "http",
+      "visibility": "public"
     }
   },
 
   "postCreateCommand": "npm install",
-  "postStartCommand": "npm run dev",
+  "postAttachCommand": "npm run dev",
 
   "remoteUser": "node"
 }
