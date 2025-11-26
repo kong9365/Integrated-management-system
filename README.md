@@ -35,9 +35,23 @@
 
 ## 설치 및 실행
 
-### 개발 환경 설정
+### GitHub Codespaces 사용 (권장)
+
+클라우드 환경에서 바로 개발할 수 있습니다:
+
+1. GitHub 저장소에서 **Code** → **Codespaces** → **Create codespace on main**
+2. Codespace 생성 후 터미널에서 `npm run dev` 실행
+3. 포트 탭에서 포트 5000을 **공개**로 설정 후 접속
+
+**참고**: 회사 내부망/방화벽에 의해 접근이 차단될 수 있습니다. 이 경우 VPN이나 모바일 핫스팟을 사용하거나 로컬 개발 환경을 사용하세요. 자세한 내용은 [.devcontainer/README.md](./.devcontainer/README.md)를 참조하세요.
+
+### 로컬 개발 환경 설정
 
 ```bash
+# 저장소 클론
+git clone https://github.com/kong9365/Integrated-management-system.git
+cd Integrated-management-system
+
 # 의존성 설치
 npm install
 

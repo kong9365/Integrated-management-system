@@ -56,6 +56,40 @@ npm run dev
 1. 터미널에서 서버가 실행 중인지 확인
 2. 포트 탭에서 "포트 추가" 버튼을 클릭하여 수동으로 5000 포트 추가
 
+### 회사 내부망/방화벽으로 인한 접근 불가
+회사 내부망이나 방화벽 정책에 의해 GitHub Codespaces 포트 포워딩이 차단될 수 있습니다.
+
+**해결 방법:**
+
+1. **VPN 사용**
+   - 회사 VPN에 연결하여 외부 네트워크로 접속
+
+2. **모바일 핫스팟 사용**
+   - 스마트폰의 모바일 데이터를 사용하여 회사 네트워크를 우회
+
+3. **네트워크 관리자에게 문의**
+   - 다음 도메인/포트에 대한 접근 허용 요청:
+     - `*.github.dev` (GitHub Codespaces 도메인)
+     - 포트 5000, 5173 (HTTP)
+
+4. **로컬 개발 환경 사용**
+   - Codespaces 대신 로컬 컴퓨터에서 개발:
+   ```bash
+   git clone https://github.com/kong9365/Integrated-management-system.git
+   cd Integrated-management-system
+   npm install
+   npm run dev
+   ```
+
+5. **프록시 설정 (회사 프록시 사용 시)**
+   - Codespaces 터미널에서 프록시 환경 변수 설정:
+   ```bash
+   export HTTP_PROXY=http://프록시주소:포트
+   export HTTPS_PROXY=http://프록시주소:포트
+   npm install
+   npm run dev
+   ```
+
 ### 의존성 오류
 ```bash
 rm -rf node_modules package-lock.json
