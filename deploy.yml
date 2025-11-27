@@ -1,0 +1,105 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: "Integrated management system"
+    env:
+      NODE_VERSION: "20"
+      RELEASE_NAME: ${{ github.sha }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            Integrated management system/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run check
+
+      - name: Run unit tests
+        run: |
+          npm run test:fileStore
+          npm run test:backup
+
+      - name: Build project
+        run: npm run build
+
+      - name: Archive deployment bundle
+        id: bundle
+        run: |
+          mkdir -p release
+          tar -czf release/deploy.tar.gz \
+            dist \
+            package.json \
+            package-lock.json \
+            server/data
+          echo "bundle=release/deploy.tar.gz" >> "$GITHUB_OUTPUT"
+
+      - name: Upload deployment bundle (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ims-deploy-${{ github.sha }}
+          path: Integrated management system/${{ steps.bundle.outputs.bundle }}
+          retention-days: 7
+
+      - name: Upload bundle to server
+        if: ${{ secrets.DEPLOY_HOST != '' && secrets.DEPLOY_USER != '' && secrets.DEPLOY_KEY != '' && secrets.DEPLOY_PATH != '' }}
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: ${{ secrets.DEPLOY_PORT != '' && secrets.DEPLOY_PORT || '22' }}
+          source: Integrated management system/${{ steps.bundle.outputs.bundle }}
+          target: /tmp/deploy-${{ github.sha }}.tar.gz
+
+      - name: Deploy on server
+        if: ${{ secrets.DEPLOY_HOST != '' && secrets.DEPLOY_USER != '' && secrets.DEPLOY_KEY != '' && secrets.DEPLOY_PATH != '' }}
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: ${{ secrets.DEPLOY_PORT != '' && secrets.DEPLOY_PORT || '22' }}
+          script: |
+            set -euo pipefail
+            ARCHIVE="/tmp/deploy-${{ github.sha }}.tar.gz"
+            DEPLOY_DIR="${{ secrets.DEPLOY_PATH }}"
+            RELEASES_DIR="$DEPLOY_DIR/releases"
+            CURRENT_LINK="$DEPLOY_DIR/current"
+            RELEASE_DIR="$RELEASES_DIR/${{ env.RELEASE_NAME }}"
+
+            mkdir -p "$RELEASES_DIR"
+            rm -rf "$RELEASE_DIR"
+            mkdir -p "$RELEASE_DIR"
+
+            tar -xzf "$ARCHIVE" -C "$RELEASE_DIR"
+            rm -f "$ARCHIVE"
+
+            cd "$RELEASE_DIR"
+            npm ci --omit=dev
+
+            ln -sfn "$RELEASE_DIR" "$CURRENT_LINK"
+
+            if [ -n "${{ secrets.PM2_PROCESS }}" ]; then
+              pm2 reload "${{ secrets.PM2_PROCESS }}" || pm2 start dist/index.js --name "${{ secrets.PM2_PROCESS }}"
+            fi
+
