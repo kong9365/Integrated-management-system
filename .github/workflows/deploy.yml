@@ -15,6 +15,12 @@ jobs:
     env:
       NODE_VERSION: "20"
       RELEASE_NAME: ${{ github.sha }}
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+      PM2_PROCESS: ${{ secrets.PM2_PROCESS }}
 
     steps:
       - name: Checkout repository
@@ -61,28 +67,28 @@ jobs:
           retention-days: 7
 
       - name: Upload bundle to server
-        if: ${{ secrets.DEPLOY_HOST != '' && secrets.DEPLOY_USER != '' && secrets.DEPLOY_KEY != '' && secrets.DEPLOY_PATH != '' }}
+        if: ${{ env.DEPLOY_HOST != '' && env.DEPLOY_USER != '' && env.DEPLOY_KEY != '' && env.DEPLOY_PATH != '' }}
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          port: ${{ secrets.DEPLOY_PORT != '' && secrets.DEPLOY_PORT || '22' }}
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          key: ${{ env.DEPLOY_KEY }}
+          port: ${{ env.DEPLOY_PORT != '' && env.DEPLOY_PORT || '22' }}
           source: Integrated management system/${{ steps.bundle.outputs.bundle }}
           target: /tmp/deploy-${{ github.sha }}.tar.gz
 
       - name: Deploy on server
-        if: ${{ secrets.DEPLOY_HOST != '' && secrets.DEPLOY_USER != '' && secrets.DEPLOY_KEY != '' && secrets.DEPLOY_PATH != '' }}
+        if: ${{ env.DEPLOY_HOST != '' && env.DEPLOY_USER != '' && env.DEPLOY_KEY != '' && env.DEPLOY_PATH != '' }}
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          port: ${{ secrets.DEPLOY_PORT != '' && secrets.DEPLOY_PORT || '22' }}
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          key: ${{ env.DEPLOY_KEY }}
+          port: ${{ env.DEPLOY_PORT != '' && env.DEPLOY_PORT || '22' }}
           script: |
             set -euo pipefail
             ARCHIVE="/tmp/deploy-${{ github.sha }}.tar.gz"
-            DEPLOY_DIR="${{ secrets.DEPLOY_PATH }}"
+            DEPLOY_DIR="${{ env.DEPLOY_PATH }}"
             RELEASES_DIR="$DEPLOY_DIR/releases"
             CURRENT_LINK="$DEPLOY_DIR/current"
             RELEASE_DIR="$RELEASES_DIR/${{ env.RELEASE_NAME }}"
@@ -99,7 +105,7 @@ jobs:
 
             ln -sfn "$RELEASE_DIR" "$CURRENT_LINK"
 
-            if [ -n "${{ secrets.PM2_PROCESS }}" ]; then
-              pm2 reload "${{ secrets.PM2_PROCESS }}" || pm2 start dist/index.js --name "${{ secrets.PM2_PROCESS }}"
+            if [ -n "${{ env.PM2_PROCESS }}" ]; then
+              pm2 reload "${{ env.PM2_PROCESS }}" || pm2 start dist/index.js --name "${{ env.PM2_PROCESS }}"
             fi
 
